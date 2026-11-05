@@ -1,0 +1,279 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adivinhe o Desenho - LIVE</title>
+<style>
+:root {
+  --bg:#101329;
+  --panel:#1d2140;
+  --cyan:#42e8e0;
+  --yellow:#ffd85a;
+  --white:#fff;
+}
+* {box-sizing:border-box}
+body {
+  margin:0;
+  background:radial-gradient(circle at top,#30366c,#101329 65%);
+  color:white;
+  font-family:Arial,sans-serif;
+}
+header {text-align:center;padding:15px}
+h1 {color:var(--yellow);font-size:27px}
+.wrap {max-width:900px;margin:auto;padding:10px}
+.top {display:flex;justify-content:space-around;gap:8px;flex-wrap:wrap}
+.pill {
+  background:#282d55;padding:10px;
+  border-radius:20px;font-weight:bold
+}
+.pill b {color:var(--cyan)}
+.board {
+  margin-top:15px;background:white;
+  border:5px solid var(--yellow);
+  border-radius:20px;min-height:300px;
+  display:grid;place-items:center;
+  position:relative;overflow:hidden
+}
+svg {width:86%;height:260px}
+.draw {
+  fill:none;stroke:#22243a;stroke-width:8;
+  stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:1200;
+  stroke-dashoffset:1200;
+  animation:draw 24s linear forwards
+}
+@keyframes draw {to{stroke-dashoffset:0}}
+.hint {color:#282d55;text-align:center;font-weight:bold;padding:12px}
+.grid {display:grid;gap:12px;margin-top:12px}
+.panel {
+  background:var(--panel);padding:15px;
+  border:1px solid #414a7b;border-radius:16px
+}
+.panel h2 {color:var(--yellow);font-size:17px}
+input {
+  width:100%;padding:14px;border:0;
+  border-radius:10px;font-size:16px;margin:5px 0
+}
+button {
+  padding:13px;border:0;border-radius:10px;
+  background:var(--cyan);font-weight:bold;
+  font-size:15px;margin:4px;cursor:pointer
+}
+.alt {background:#343b69;color:white}
+.actions {display:flex;flex-wrap:wrap}
+.actions button {flex:1}
+#feedback {color:var(--yellow);font-weight:bold;min-height:25px}
+li {padding:7px;border-bottom:1px solid #343a65}
+.note {font-size:12px;color:#c3c9e8;line-height:1.5}
+@media(min-width:700px) {
+  .grid {grid-template-columns:1.2fr .8fr}
+}
+</style>
+</head>
+<body>
+
+<header>
+<h1>🎨 ADIVINHE O DESENHO!</h1>
+<div>LIVE INTERATIVA • Acerte antes do tempo acabar!</div>
+</header>
+
+<div class="wrap">
+
+<div class="top">
+<div class="pill">RODADA <b id="round">1</b></div>
+<div class="pill">⏱️ <b id="time">30</b>s</div>
+<div class="pill">🏆 <b id="count">0</b> jogadores</div>
+</div>
+
+<div class="board">
+<svg id="drawing" viewBox="0 0 300 230"></svg>
+</div>
+
+<div class="hint" id="hint">Prepare-se!</div>
+
+<div class="grid">
+<section class="panel">
+<h2>💬 Envie seu palpite</h2>
+<input id="name" placeholder="Seu nome ou @ do TikTok">
+<input id="guess" placeholder="Digite sua resposta">
+
+<div class="actions">
+<button id="send">Enviar palpite</button>
+<button class="alt" id="voice">🔊 Ativar voz</button>
+</div>
+
+<div id="feedback"></div>
+
+<div class="actions">
+<button class="alt" id="next">Próxima rodada</button>
+<button class="alt" id="restart">Reiniciar</button>
+</div>
+</section>
+
+<section class="panel">
+<h2>🏆 Ranking</h2>
+<ol id="ranking">
+<li>Ainda sem pontos</li>
+</ol>
+</section>
+</div>
+
+<p class="note">
+Protótipo do jogo. Os palpites manuais funcionam nesta página.
+A conexão automática com os comentários reais do TikTok
+será feita posteriormente pelo servidor.
+</p>
+</div>
+
+<script>
+const rounds = [
+{
+word:"banana",
+hint:"É uma fruta muito comum.",
+svg:'<path class="draw" d="M70 40 C82 100 140 168 222 178 C246 181 258 168 260 151 C220 165 156 130 119 83 C100 59 90 39 88 26"/><path class="draw" d="M70 40 L86 25 L98 34 L88 49"/><path class="draw" d="M222 178 L241 185 L260 151"/>'
+},
+{
+word:"casa",
+hint:"É um lugar onde as pessoas moram.",
+svg:'<path class="draw" d="M48 110 L150 35 L252 110 M68 100 V205 H232 V100 M125 205 V140 H175 V205 M92 125 H117 V151 H92 Z M187 125 H212 V151 H187 Z"/>'
+},
+{
+word:"carro",
+hint:"Tem rodas e anda nas ruas.",
+svg:'<path class="draw" d="M45 150 L62 105 H210 L245 150 V190 H45 Z M83 105 L105 65 H180 L207 105 M45 150 H245 M75 190 A22 22 0 1 0 119 190 A22 22 0 1 0 75 190 M178 190 A22 22 0 1 0 222 190 A22 22 0 1 0 178 190"/>'
+},
+{
+word:"peixe",
+hint:"É um animal que vive na água.",
+svg:'<path class="draw" d="M55 115 Q130 35 215 115 Q130 195 55 115 L25 75 V155 Z M170 105 Q180 115 170 125 M95 100 Q105 110 95 120"/>'
+},
+{
+word:"sol",
+hint:"Aparece no céu durante o dia.",
+svg:'<circle class="draw" cx="150" cy="115" r="48"/><path class="draw" d="M150 28 V48 M150 182 V202 M63 115 H43 M257 115 H237 M88 53 L73 38 M212 177 L227 192 M212 53 L227 38 M88 177 L73 192"/>'
+},
+{
+word:"copo",
+hint:"Você usa para beber água.",
+svg:'<path class="draw" d="M85 45 H215 L195 205 H105 Z M93 85 H207"/>'
+}
+];
+
+let idx=0;
+let seconds=30;
+let timer=null;
+let players={};
+let solved=false;
+let voiceOn=false;
+
+const $=id=>document.getElementById(id);
+
+function say(text) {
+ if(voiceOn && 'speechSynthesis' in window) {
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='pt-BR';
+  speechSynthesis.speak(u);
+ }
+}
+
+function renderRanking() {
+ const arr=Object.entries(players).sort((a,b)=>b[1]-a[1]);
+ $('count').textContent=arr.length;
+ $('ranking').innerHTML=arr.length
+ ? arr.map(([n,p])=>`<li>${escapeHtml(n)} — ${p} pontos</li>`).join('')
+ : '<li>Ainda sem pontos</li>';
+}
+
+function escapeHtml(s) {
+ return s.replace(/[&<>"']/g,c=>({
+ '&':'&amp;','<':'&lt;','>':'&gt;',
+ '"':'&quot;',"'":'&#39;'
+ }[c]));
+}
+
+function start() {
+ clearInterval(timer);
+ solved=false;
+ seconds=30;
+ $('time').textContent=seconds;
+ $('round').textContent=idx+1;
+ $('feedback').textContent='';
+ $('hint').textContent='💬 '+rounds[idx].hint;
+ $('drawing').innerHTML=rounds[idx].svg;
+
+ $('drawing').querySelectorAll('.draw').forEach(el=>{
+  el.style.animation='none';
+  void el.getBoundingClientRect();
+  el.style.animation='draw 24s linear forwards';
+ });
+
+ timer=setInterval(()=>{
+  seconds--;
+  $('time').textContent=seconds;
+
+  if(seconds===15) say('Metade do tempo! Mande seu palpite.');
+
+  if(seconds<=0) {
+   clearInterval(timer);
+   solved=true;
+   $('feedback').textContent='⏰ Tempo! Resposta: '+rounds[idx].word.toUpperCase();
+   say('O tempo acabou. A resposta era '+rounds[idx].word);
+  }
+ },1000);
+}
+
+function submit() {
+ if(solved) return;
+
+ const n=$('name').value.trim()||'Visitante';
+ const g=$('guess').value.trim().toLowerCase()
+ .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+
+ const w=rounds[idx].word.normalize('NFD')
+ .replace(/[\u0300-\u036f]/g,'');
+
+ if(!g) return;
+
+ if(g===w) {
+  players[n]=(players[n]||0)+10;
+  renderRanking();
+  solved=true;
+  clearInterval(timer);
+  $('feedback').textContent='🎉 '+n+' acertou! +10 pontos';
+  say(n+' acertou! A resposta é '+rounds[idx].word);
+ } else {
+  $('feedback').textContent='Ainda não! Tente novamente.';
+  $('guess').value='';
+ }
+}
+
+$('send').onclick=submit;
+$('guess').addEventListener('keydown',e=>{
+ if(e.key==='Enter') submit();
+});
+
+$('next').onclick=()=>{
+ idx=(idx+1)%rounds.length;
+ start();
+};
+
+$('restart').onclick=()=>{
+ idx=0;
+ players={};
+ renderRanking();
+ start();
+};
+
+$('voice').onclick=()=>{
+ voiceOn=!voiceOn;
+ $('voice').textContent=voiceOn?'🔊 Voz ativada':'🔊 Ativar voz';
+ if(voiceOn) say('Voz ativada. Vamos jogar!');
+};
+
+start();
+</script>
+</body>
+</html>
